@@ -11,6 +11,6 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@netlify/blobs": "^0.2.0"
+    "@netlify/blobs": "^8.0.0"
   }
 }
