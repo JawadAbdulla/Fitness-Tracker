@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitness Accountability Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg1:#ffffff;--bg2:#f5f4f0;--bg3:#eceae4;
+  --tx1:#1a1a18;--tx2:#6b6a64;--tx3:#9c9a92;
+  --bd1:rgba(0,0,0,0.28);--bd2:rgba(0,0,0,0.15);--bd3:rgba(0,0,0,0.08);
+  --success:#1D9E75;--successbg:#E1F5EE;--successtx:#085041;
+  --warn:#BA7517;--warnbg:#FAEEDA;--warntx:#633806;
+  --danger:#E24B4A;--dangerbg:#FCEBEB;--dangertx:#791F1F;
+  --info:#185FA5;--infobg:#E6F1FB;--infotx:#0C447C;
+  --r8:8px;--r12:12px;--r16:16px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg1:#1e1e1c;--bg2:#272724;--bg3:#202020;
+    --tx1:#e8e7e1;--tx2:#9c9a92;--tx3:#6b6a64;
+    --bd1:rgba(255,255,255,0.28);--bd2:rgba(255,255,255,0.14);--bd3:rgba(255,255,255,0.07);
+    --successbg:#0a2e20;--successtx:#5DCAA5;
+    --warnbg:#2a1e08;--warntx:#FAC775;
+    --dangerbg:#2e0a0a;--dangertx:#F09595;
+    --infobg:#0a1e2e;--infotx:#85B7EB;
+  }
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg3);color:var(--tx1);min-height:100vh;font-size:14px}
+.app{max-width:720px;margin:0 auto;padding:16px}
+
+/* TABS */
+.tabs{display:flex;gap:3px;background:var(--bg2);border:0.5px solid var(--bd3);border-radius:var(--r12);padding:3px;margin-bottom:14px}
+.tab{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:9px;font-size:12px;font-weight:500;cursor:pointer;color:var(--tx2);transition:all .15s;font-family:'DM Sans',sans-serif}
+.tab.active{background:var(--bg1);color:var(--tx1);border:0.5px solid var(--bd3)}
+
+/* CARDS */
+.card{background:var(--bg1);border:0.5px solid var(--bd3);border-radius:var(--r12);padding:14px;margin-bottom:10px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.card-title{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.stat{background:var(--bg2);border-radius:var(--r8);padding:10px 12px}
+.stat-label{font-size:11px;color:var(--tx2);margin-bottom:3px}
+.stat-val{font-size:19px;font-weight:600;font-family:'DM Mono',monospace}
+
+/* LEADERBOARD */
+.lb-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:0.5px solid var(--bd3)}
+.lb-row:last-child{border-bottom:none;padding-bottom:0}
+.rank-badge{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;flex-shrink:0}
+.rank-badge.gold{background:#FFF3CD;color:#856404}
+.rank-badge.silver{background:#E2E3E5;color:#41464b}
+.rank-badge.bronze{background:#FFE5D0;color:#84430a}
+.rank-badge.other{background:var(--bg2);color:var(--tx2)}
+.ring-wrap{position:relative;width:40px;height:40px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;font-family:'DM Mono',monospace}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.lb-goals{font-size:11px;color:var(--tx2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-right{text-align:right;flex-shrink:0}
+.lb-balance{font-size:14px;font-weight:600;font-family:'DM Mono',monospace}
+.lb-meta{font-size:11px;color:var(--tx2);margin-top:1px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:500;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.badge.success{background:var(--successbg);color:var(--successtx)}
+.badge.warn{background:var(--warnbg);color:var(--warntx)}
+.badge.danger{background:var(--dangerbg);color:var(--dangertx)}
+.badge.champ{background:#FFF3CD;color:#856404}
+.badge.streak{background:var(--warnbg);color:var(--warntx)}
+
+/* DOTS */
+.dots{display:flex;gap:3px;margin-top:3px}
+.dot{width:9px;height:9px;border-radius:50%}
+.dot.done{background:var(--success)}
+.dot.miss{background:var(--bg2);border:0.5px solid var(--bd2)}
+
+/* AVATAR */
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.av0{background:#EEEDFE;color:#3C3489}
+.av1{background:#E1F5EE;color:#085041}
+.av2{background:#FAECE7;color:#712B13}
+.av3{background:#FBEAF0;color:#72243E}
+.av4{background:#E6F1FB;color:#0C447C}
+.av5{background:#EAF3DE;color:#27500A}
+.av6{background:#FAEEDA;color:#633806}
+.av7{background:#FCEBEB;color:#791F1F}
+
+/* PHOTO UPLOAD */
+.photo-upload-wrap{position:relative;cursor:pointer;flex-shrink:0}
+.photo-upload-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.photo-upload-btn{width:56px;height:56px;border-radius:50%;border:1.5px dashed var(--bd2);display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--bg2);transition:all .15s}
+.photo-upload-wrap:hover .photo-upload-btn{border-color:var(--bd1);background:var(--bg3)}
+.photo-preview{width:56px;height:56px;border-radius:50%;object-fit:cover;border:1.5px solid var(--bd2)}
+
+/* CHECKIN */
+.ci-member-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ci-goal-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--bd3)}
+.ci-goal-row:last-child{border-bottom:none}
+.ci-goal-label{font-size:12px;flex:1;min-width:0}
+.ci-goal-name{font-weight:500}
+.ci-goal-sub{font-size:10px;color:var(--tx2);margin-top:1px}
+.day-grid{display:flex;gap:4px;flex-shrink:0}
+.day-btn{width:30px;height:30px;border-radius:var(--r8);border:0.5px solid var(--bd2);background:var(--bg2);cursor:pointer;font-size:9px;font-weight:500;color:var(--tx2);transition:all .12s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:'DM Sans',sans-serif}
+.day-btn:hover{border-color:var(--bd1)}
+.day-btn.checked{background:var(--successbg);border-color:var(--success);color:var(--successtx)}
+.day-btn.locked{cursor:default;opacity:.5}
+.day-btn .dl{font-size:7px;opacity:.65}
+.shared-section{background:var(--infobg);border:0.5px solid rgba(56,139,219,.2);border-radius:var(--r8);padding:10px 12px;margin-bottom:8px}
+.shared-title{font-size:10px;font-weight:500;color:var(--infotx);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+
+/* FORMS */
+.form-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:110px}
+.form-label{font-size:11px;font-weight:500;color:var(--tx2)}
+input,select{border:0.5px solid var(--bd2);border-radius:var(--r8);padding:7px 10px;font-size:13px;background:var(--bg1);color:var(--tx1);font-family:'DM Sans',sans-serif;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--bd1)}
+
+/* BUTTONS */
+.btn{padding:7px 13px;border-radius:var(--r8);border:0.5px solid var(--bd2);background:var(--bg1);color:var(--tx1);font-size:12px;font-weight:500;cursor:pointer;transition:all .12s;font-family:'DM Sans',sans-serif}
+.btn:hover{background:var(--bg2)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--tx1);color:var(--bg1);border-color:transparent}
+.btn.primary:hover{opacity:.85}
+.btn.danger-btn{color:var(--danger);border-color:rgba(226,75,74,.3)}
+.btn.danger-btn:hover{background:var(--dangerbg)}
+.btn.xs{padding:4px 8px;font-size:11px}
+
+/* GOAL CHIPS */
+.goal-chip{display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid var(--bd3);border-radius:var(--r8);padding:7px 10px;margin-bottom:6px}
+.goal-chip-label{flex:1;font-size:12px;font-weight:500}
+.goal-chip-target{font-size:11px;color:var(--tx2);font-family:'DM Mono',monospace}
+.add-goal-box{background:var(--bg2);border-radius:var(--r8);padding:10px;margin-bottom:10px}
+.add-goal-title{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+
+/* SUMMARY */
+.summary-msg{background:var(--bg2);border:0.5px solid var(--bd3);border-radius:var(--r8);padding:12px 14px;font-size:11px;font-family:'DM Mono',monospace;white-space:pre-wrap;color:var(--tx2);max-height:200px;overflow-y:auto;line-height:1.75}
+
+/* WEEK NAV */
+.week-nav{display:flex;align-items:center;gap:8px}
+.week-label{font-size:12px;font-weight:500;min-width:56px;text-align:center}
+
+/* CHAMP BANNER */
+.champ-banner{background:#FFF8E1;border:0.5px solid #FAC775;border-radius:var(--r12);padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.champ-text{font-size:13px;font-weight:500;color:#633806}
+.champ-sub{font-size:11px;color:#84430a;margin-top:2px}
+
+/* SETTINGS */
+.config-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--bd3);font-size:13px}
+.config-row:last-child{border-bottom:none}
+.pot-hero{display:flex;align-items:center;gap:12px;padding:8px 0 12px}
+.pot-val{font-size:26px;font-weight:700;font-family:'DM Mono',monospace}
+.pot-sub{font-size:11px;color:var(--tx2);margin-top:2px}
+
+/* PIN OVERLAY */
+.pin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center;padding:16px}
+.pin-overlay.open{display:flex}
+.pin-box{background:var(--bg1);border-radius:var(--r16);padding:28px 24px;width:100%;max-width:320px;text-align:center}
+.pin-title{font-size:16px;font-weight:600;margin-bottom:6px}
+.pin-sub{font-size:12px;color:var(--tx2);margin-bottom:20px}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:20px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--bg2);border:0.5px solid var(--bd2);transition:all .15s}
+.pin-dot.filled{background:var(--tx1);border-color:var(--tx1)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.pin-key{padding:14px;border-radius:var(--r8);border:0.5px solid var(--bd2);background:var(--bg2);font-size:18px;font-weight:500;cursor:pointer;transition:all .12s;font-family:'DM Mono',monospace}
+.pin-key:hover{background:var(--bg3);border-color:var(--bd1)}
+.pin-key:active{transform:scale(.95)}
+.pin-error{font-size:12px;color:var(--danger);margin-top:8px;min-height:18px}
+.pin-admin-bar{display:flex;align-items:center;gap:8px;background:var(--successbg);border:0.5px solid var(--success);border-radius:var(--r8);padding:8px 12px;margin-bottom:10px}
+.pin-admin-label{font-size:12px;color:var(--successtx);flex:1;font-weight:500}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg1);border:0.5px solid var(--bd2);border-radius:var(--r16);padding:20px;width:100%;max-width:460px}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:14px}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;gap:10px;color:var(--tx2);font-size:13px}
+.spinner{width:18px;height:18px;border:2px solid var(--bd2);border-top-color:var(--tx2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:28px 16px;color:var(--tx2);font-size:13px}
+.save-indicator{font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:5px}
+.save-indicator.saving{color:var(--warn)}
+.save-indicator.saved{color:var(--success)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="root"><div class="loading"><div class="spinner"></div> Loading tracker...</div></div>
+</div>
+
+<!-- PIN OVERLAY -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-title">Admin access</div>
+    <div class="pin-sub">Enter your 4-digit PIN to manage the tracker</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" onclick="pinPress('clear')" style="font-size:13px">CLR</button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key" onclick="pinPress('back')" style="font-size:13px">⌫</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <button class="btn" style="width:100%;margin-top:4px" onclick="closePinOverlay()">Cancel</button>
+  </div>
+</div>
+
+<!-- EDIT MEMBER MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Edit member</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div class="photo-upload-wrap" id="em-photo-wrap">
+        <div class="photo-upload-btn" id="em-photo-preview">📷</div>
+        <input type="file" accept="image/*" onchange="handleEditPhoto(event)">
+      </div>
+      <div class="form-group" style="flex:1"><label class="form-label">Name</label><input id="em-name" type="text"></div>
+    </div>
+    <div style="font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Personal goals</div>
+    <div id="em-goals-list"></div>
+    <div class="add-goal-box" style="margin-top:8px">
+      <div class="add-goal-title">Add goal</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Goal name</label><input id="eg-name" type="text" placeholder="e.g. Yoga, Cycling"></div>
+        <div class="form-group" style="max-width:80px"><label class="form-label">Target/wk</label><input id="eg-target" type="number" min="1" max="7" placeholder="3"></div>
+      </div>
+      <button class="btn xs" onclick="addGoalToEdit()">+ Add</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn" onclick="closeEditModal()">Cancel</button>
+      <button class="btn primary" onclick="saveEditMember()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+// Change this PIN to whatever 4-digit code you want
+const ADMIN_PIN = "1991";
+const API = "/.netlify/functions/data";
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const AV = ['av0','av1','av2','av3','av4','av5','av6','av7'];
+
+// ── STATE ────────────────────────────────────────────────────────
+let S = {
+  tab: 'leaderboard',
+  week: 1,
+  totalWeeks: 8,
+  penaltyAmount: 10,
+  buyin: 40,
+  sharedHabits: [
+    {id:'water', icon:'💧', label:'2L Water', target:5},
+    {id:'move',  icon:'🏃', label:'30 min Movement', target:5},
+  ],
+  members: [],
+};
+
+let isAdmin = false;
+let saveTimer = null;
+let editMemberId = null;
+let editGoals = [];
+let editPhoto = null;
+let pinBuffer = '';
+let pinCallback = null;
+
+// ── PERSISTENCE ──────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const res = await fetch(API);
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        S = { ...S, ...data };
+        // restore tab to leaderboard on load
+        S.tab = 'leaderboard';
+      }
+    }
+  } catch(e) {
+    console.warn('Could not load data:', e);
+  }
+  render();
+}
+
+function scheduleSave() {
+  setSaveStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await fetch(API, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(S),
+      });
+      setSaveStatus('saved');
+    } catch(e) {
+      setSaveStatus('error');
+    }
+  }, 800);
+}
+
+function setSaveStatus(status) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  if (status === 'saving') { el.className='save-indicator saving'; el.textContent='Saving...'; }
+  else if (status === 'saved') { el.className='save-indicator saved'; el.textContent='Saved ✓'; setTimeout(()=>{if(el)el.textContent='';},2500); }
+  else { el.className='save-indicator'; el.textContent=''; }
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+const uid = () => 'g' + Date.now() + Math.floor(Math.random()*9999);
+const initials = n => n.trim().split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+
+function gci(m, w, gid) {
+  const k = `w${w}_${gid}`;
+  if (!m.checkins[k]) m.checkins[k] = Array(7).fill(0);
+  return m.checkins[k];
+}
+function gcnt(m, w, gid) { return gci(m,w,gid).reduce((a,b)=>a+b,0); }
+function goalMet(m, w, g) { return gcnt(m,w,g.id) >= g.target; }
+function habitMet(m, w, h) { return gcnt(m,w,h.id) >= h.target; }
+
+function weekPen(m, w) {
+  return (m.goals.some(g=>!goalMet(m,w,g)) || S.sharedHabits.some(h=>!habitMet(m,w,h))) ? 1 : 0;
+}
+function totalPen(m) { let p=0; for(let w=1;w<=S.week;w++) p+=weekPen(m,w); return p; }
+function balance(m) { return S.buyin - (totalPen(m) * S.penaltyAmount); }
+
+function weekPct(m, w) {
+  const gp = m.goals.map(g => Math.min(100, Math.round(gcnt(m,w,g.id)/g.target*100)));
+  const hp = S.sharedHabits.map(h => Math.min(100, Math.round(gcnt(m,w,h.id)/h.target*100)));
+  const all = [...gp, ...hp];
+  return Math.round(all.reduce((a,b)=>a+b,0) / all.length);
+}
+function overallPct(m) {
+  let t=0, c=0;
+  for(let w=1;w<=S.week;w++) { t+=weekPct(m,w); c++; }
+  return c ? Math.round(t/c) : 0;
+}
+function hasStreakMiss(m) {
+  const all = [...m.goals, ...S.sharedHabits];
+  const tod = new Date().getDay();
+  const y = tod===0?6:tod-1;
+  const yy = y===0?6:y-1;
+  const miss = di => all.some(item => gci(m,S.week,item.id)[di]===0);
+  return miss(y) && miss(yy);
+}
+function champion() {
+  if (!S.members.length) return null;
+  return [...S.members].sort((a,b)=>weekPct(b,S.week)-weekPct(a,S.week))[0];
+}
+function sorted() {
+  return [...S.members].sort((a,b) => {
+    const d = balance(b)-balance(a);
+    return d !== 0 ? d : overallPct(b)-overallPct(a);
+  });
+}
+function pcol(p) { return p>=75?'var(--success)':p>=40?'var(--warn)':'var(--danger)'; }
+function totalPot() { return S.members.length * S.buyin; }
+function totalPenAmt() { return S.members.reduce((t,m)=>t+totalPen(m)*S.penaltyAmount,0); }
+
+function avatarHTML(m, size=32, fontSize=11) {
+  if (m.photo) {
+    return `<div class="avatar" style="width:${size}px;height:${size}px"><img src="${m.photo}" alt="${m.name}"></div>`;
+  }
+  return `<div class="avatar ${m.color}" style="width:${size}px;height:${size}px;font-size:${fontSize}px">${initials(m.name)}</div>`;
+}
+
+// ── PIN ──────────────────────────────────────────────────────────
+function requireAdmin(cb) {
+  if (isAdmin) { cb(); return; }
+  pinCallback = cb;
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-overlay').classList.add('open');
+}
+
+function closePinOverlay() {
+  document.getElementById('pin-overlay').classList.remove('open');
+  pinBuffer = '';
+  pinCallback = null;
+}
+
+window.pinPress = key => {
+  if (key === 'clear') { pinBuffer = ''; }
+  else if (key === 'back') { pinBuffer = pinBuffer.slice(0,-1); }
+  else if (pinBuffer.length < 4) { pinBuffer += key; }
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(() => {
+      if (pinBuffer === ADMIN_PIN) {
+        isAdmin = true;
+        closePinOverlay();
+        if (pinCallback) { pinCallback(); pinCallback = null; }
+        render();
+      } else {
+        document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
+        pinBuffer = '';
+        updatePinDots();
+      }
+    }, 150);
+  }
+};
+
+function updatePinDots() {
+  for (let i=0;i<4;i++) {
+    const el = document.getElementById(`pd${i}`);
+    if (el) el.className = 'pin-dot' + (i < pinBuffer.length ? ' filled' : '');
+  }
+}
+
+// ── PHOTO HELPERS ─────────────────────────────────────────────────
+function resizeImage(file, maxW=200, maxH=200) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w=img.width, h=img.height;
+        if(w>h){ if(w>maxW){h=Math.round(h*maxW/w);w=maxW;} }
+        else { if(h>maxH){w=Math.round(w*maxH/h);h=maxH;} }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── LEADERBOARD ──────────────────────────────────────────────────
+function renderLeaderboard() {
+  const members = sorted();
+  if (!members.length) return `<div class="empty">No members yet. Ask your admin to add the crew in the Members tab.</div>`;
+
+  const champ = champion();
+  const champBanner = champ ? `<div class="champ-banner">
+    <span style="font-size:22px">🏆</span>
+    <div><div class="champ-text">Week ${S.week} Champion — ${champ.name}</div>
+    <div class="champ-sub">${weekPct(champ,S.week)}% avg across all goals this week</div></div>
+  </div>` : '';
+
+  const rows = members.map((m,i) => {
+    const bal = Math.max(0, balance(m));
+    const pct = overallPct(m);
+    const wpct = weekPct(m, S.week);
+    const r=16, circ=2*Math.PI*r, dash=circ*pct/100;
+    const fill = pcol(pct);
+    const rc = i===0?'gold':i===1?'silver':i===2?'bronze':'other';
+    const bc = bal>=S.buyin*.8?'var(--success)':bal>=S.buyin*.5?'var(--warn)':'var(--danger)';
+    const isChamp = champ && champ.id===m.id;
+    const streak = hasStreakMiss(m);
+    const goalSummary = m.goals.map(g=>`${g.icon||'🎯'}${g.name} ${g.target}x`).join(' · ');
+    const firstGoalDays = m.goals.length ? gci(m,S.week,m.goals[0].id) : Array(7).fill(0);
+
+    return `<div class="lb-row">
+      <span class="rank-badge ${rc}">${i+1}</span>
+      <div class="ring-wrap">
+        <svg width="40" height="40" viewBox="0 0 40 40">
+          <circle cx="20" cy="20" r="${r}" fill="none" stroke="var(--bg2)" stroke-width="3"/>
+          <circle cx="20" cy="20" r="${r}" fill="none" stroke="${fill}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"/>
+        </svg>
+        <div class="ring-center" style="color:${fill}">${pct}%</div>
+      </div>
+      <div class="lb-info">
+        <div class="lb-name">
+          ${avatarHTML(m, 26, 10)}
+          ${m.name}
+          ${isChamp?`<span class="badge champ">🏆</span>`:''}
+          ${streak?`<span class="badge streak">⚠ 2-day miss</span>`:''}
+        </div>
+        <div class="lb-goals">${goalSummary}</div>
+        <div class="dots">${firstGoalDays.map(d=>`<div class="dot ${d?'done':'miss'}"></div>`).join('')}</div>
+      </div>
+      <div class="lb-right">
+        <div class="lb-balance" style="color:${bc}">$${bal}</div>
+        <div class="lb-meta">${totalPen(m)>0?`${totalPen(m)} penalty wk${totalPen(m)>1?'s':''}`:'no penalties'}</div>
+        <span class="badge ${wpct>=100?'success':wpct>=60?'warn':'danger'}" style="margin-top:3px">wk${S.week}: ${wpct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="stats-row">
+    <div class="stat"><div class="stat-label">Total pot</div><div class="stat-val">$${totalPot()}</div></div>
+    <div class="stat"><div class="stat-label">Penalties</div><div class="stat-val" style="color:var(--warn)">$${totalPenAmt()}</div></div>
+    <div class="stat"><div class="stat-label">Week</div><div class="stat-val">${S.week}/${S.totalWeeks}</div></div>
+  </div>
+  ${champBanner}
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Leaderboard</span>
+      <div class="week-nav">
+        <button class="btn xs" onclick="setWeek(${S.week-1})" ${S.week<=1?'disabled':''}>‹</button>
+        <span class="week-label">Week ${S.week}</span>
+        <button class="btn xs" onclick="setWeek(${S.week+1})" ${S.week>=S.totalWeeks?'disabled':''}>›</button>
+      </div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+// ── CHECKINS ─────────────────────────────────────────────────────
+function renderCheckins() {
+  if (!S.members.length) return `<div class="empty">No members yet.</div>`;
+
+  const adminBar = isAdmin
+    ? `<div class="pin-admin-bar"><span style="font-size:14px">🔓</span><span class="pin-admin-label">Admin mode — check-ins unlocked</span><button class="btn xs" onclick="lockAdmin()">Lock</button></div>`
+    : `<div class="pin-admin-bar" style="background:var(--bg2);border-color:var(--bd3)"><span style="font-size:14px">🔒</span><span style="font-size:12px;color:var(--tx2);flex:1">Viewing only — <a href="#" onclick="requireAdmin(render);return false;" style="color:var(--info)">tap to unlock check-ins</a></span></div>`;
+
+  const blocks = S.members.map(m => {
+    const wp = weekPen(m, S.week);
+    const locked = !isAdmin;
+
+    const habitRows = S.sharedHabits.map(h => {
+      const days = gci(m, S.week, h.id);
+      const cnt = days.reduce((a,b)=>a+b,0);
+      const met = cnt >= h.target;
+      return `<div class="ci-goal-row">
+        <div class="ci-goal-label">
+          <div class="ci-goal-name">${h.icon} ${h.label}</div>
+          <div class="ci-goal-sub">${cnt}/${h.target}x — <span style="color:${met?'var(--success)':'var(--danger)'}">${met?'on track':'below target'}</span></div>
+        </div>
+        <div class="day-grid">${DAYS.map((day,di)=>`<button class="day-btn ${days[di]?'checked':''} ${locked?'locked':''}" ${locked?'':'onclick="toggleDay('+m.id+',\''+h.id+'\','+di+')"'}>${days[di]?'✓':''}<span class="dl">${day.slice(0,2)}</span></button>`).join('')}</div>
+      </div>`;
+    }).join('');
+
+    const goalRows = m.goals.map(g => {
+      const days = gci(m, S.week, g.id);
+      const cnt = days.reduce((a,b)=>a+b,0);
+      const met = cnt >= g.target;
+      return `<div class="ci-goal-row">
+        <div class="ci-goal-label">
+          <div class="ci-goal-name">${g.icon||'🎯'} ${g.name}</div>
+          <div class="ci-goal-sub">${cnt}/${g.target}x — <span style="color:${met?'var(--success)':'var(--danger)'}">${met?'on track':'below target'}</span></div>
+        </div>
+        <div class="day-grid">${DAYS.map((day,di)=>`<button class="day-btn ${days[di]?'checked':''} ${locked?'locked':''}" ${locked?'':'onclick="toggleDay('+m.id+',\''+g.id+'\','+di+')"'}>${days[di]?'✓':''}<span class="dl">${day.slice(0,2)}</span></button>`).join('')}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card">
+      <div class="ci-member-header">
+        ${avatarHTML(m, 34, 12)}
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500">${m.name}</div>
+          <div style="font-size:11px;color:var(--tx2);margin-top:2px">${wp?`<span style="color:var(--danger)">penalty triggered this week</span>`:`<span style="color:var(--success)">on track this week</span>`}</div>
+        </div>
+        ${isAdmin?`<button class="btn xs" onclick="openEditModal(${m.id})">Edit goals</button>`:''}
+      </div>
+      <div class="shared-section">
+        <div class="shared-title">Shared group habits</div>
+        ${habitRows}
+      </div>
+      ${goalRows}
+    </div>`;
+  }).join('');
+
+  return `
+  ${adminBar}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+    <span style="font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em">Week ${S.week} check-ins</span>
+    <div class="week-nav">
+      <button class="btn xs" onclick="setWeek(${S.week-1})" ${S.week<=1?'disabled':''}>‹</button>
+      <span class="week-label">Week ${S.week}</span>
+      <button class="btn xs" onclick="setWeek(${S.week+1})" ${S.week>=S.totalWeeks?'disabled':''}>›</button>
+    </div>
+  </div>
+  ${blocks}
+  <div class="card">
+    <div class="card-header"><span class="card-title">Weekly summary — copy to group chat</span></div>
+    <div class="summary-msg" id="summary-text">${genSummary()}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+      <button class="btn xs" onclick="copySummary()">Copy message</button>
+      <span id="copy-confirm" style="font-size:11px;color:var(--success);opacity:0;transition:opacity .3s">Copied!</span>
+    </div>
+  </div>`;
+}
+
+function genSummary() {
+  const members = sorted(), champ = champion();
+  const lines = [
+    `📊 WEEK ${S.week} STANDINGS`,
+    `Week ${S.week} of ${S.totalWeeks} | Penalty: $${S.penaltyAmount}/missed week`,
+    `Group habits: ${S.sharedHabits.map(h=>`${h.icon}${h.label} (${h.target}x/wk)`).join(', ')}`,
+    `Total pot: $${totalPot()}`, ``,
+    `LEADERBOARD`,
+    ...members.map((m,i) => {
+      const icons = ['🥇','🥈','🥉'];
+      return `${i<3?icons[i]:`${i+1}.`} ${m.name} — ${weekPct(m,S.week)}% this week | $${Math.max(0,balance(m))} left${totalPen(m)>0?` | ${totalPen(m)} penalty wk`:' | clean'}`;
+    }),``,
+    champ ? `🏆 Week ${S.week} Champion: ${champ.name} (${weekPct(champ,S.week)}% avg)` : null, ``,
+    `📸 Photo Saturday — post that workout selfie or healthy meal!`,
+    `Keep pushing! 💪`,
+  ].filter(l => l !== null);
+  return lines.join('\n');
+}
+
+// ── MEMBERS ──────────────────────────────────────────────────────
+function renderMembers() {
+  if (!isAdmin) return `<div class="card"><div class="empty" style="padding:20px">
+    <div style="font-size:28px;margin-bottom:8px">🔒</div>
+    <div style="font-weight:500;margin-bottom:6px">Admin access required</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:14px">Managing members requires your admin PIN</div>
+    <button class="btn primary" onclick="requireAdmin(()=>{S.tab='members';render();})">Unlock</button>
+  </div></div>`;
+
+  return `
+  <div class="card">
+    <div class="card-header"><span class="card-title">Add new member</span></div>
+    <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:10px">
+      <div>
+        <div class="form-label" style="margin-bottom:6px">Photo</div>
+        <div class="photo-upload-wrap" id="add-photo-wrap">
+          <div class="photo-upload-btn" id="add-photo-preview">📷</div>
+          <input type="file" accept="image/*" onchange="handleAddPhoto(event)">
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Name</label><input id="a-name" type="text" placeholder="Full name"></div>
+    </div>
+    <div id="add-goals-list">${(S.addForm?.goals||[]).map((g,gi)=>`
+      <div class="goal-chip">
+        <span class="goal-chip-label">${g.icon||'🎯'} ${g.name}</span>
+        <span class="goal-chip-target">${g.target}x/wk</span>
+        <button class="btn xs danger-btn" onclick="removeAddGoal(${gi})">✕</button>
+      </div>`).join('')}</div>
+    <div class="add-goal-box">
+      <div class="add-goal-title">Add personal goal</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Goal</label><input id="ag-name" type="text" placeholder="e.g. Gym, Swimming, Yoga"></div>
+        <div class="form-group" style="max-width:80px"><label class="form-label">Target/wk</label><input id="ag-target" type="number" min="1" max="7" placeholder="3"></div>
+      </div>
+      <button class="btn xs" onclick="addGoalToNew()">+ Add goal</button>
+    </div>
+    <button class="btn primary" onclick="addMember()">Add member</button>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Current members (${S.members.length})</span></div>
+    ${!S.members.length?`<div class="empty">No members yet.</div>`:S.members.map(m=>`
+      <div class="lb-row">
+        <div></div>
+        ${avatarHTML(m, 38, 13)}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500">${m.name}</div>
+          <div style="font-size:11px;color:var(--tx2);margin-top:2px">${m.goals.map(g=>`${g.icon||'🎯'}${g.name} ${g.target}x`).join(' · ')}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn xs" onclick="openEditModal(${m.id})">Edit</button>
+          <button class="btn xs danger-btn" onclick="removeMember(${m.id})">Remove</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────
+function renderSettings() {
+  if (!isAdmin) return `<div class="card"><div class="empty" style="padding:20px">
+    <div style="font-size:28px;margin-bottom:8px">🔒</div>
+    <div style="font-weight:500;margin-bottom:6px">Admin access required</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:14px">Changing settings requires your admin PIN</div>
+    <button class="btn primary" onclick="requireAdmin(()=>{S.tab='settings';render();})">Unlock</button>
+  </div></div>`;
+
+  return `
+  <div class="card">
+    <div class="card-header"><span class="card-title">Challenge settings</span></div>
+    <div class="config-row"><span>Penalty per missed week</span><div style="display:flex;align-items:center;gap:6px"><input type="number" min="1" id="s-penalty" value="${S.penaltyAmount}" style="width:65px;text-align:center"><span style="font-size:12px;color:var(--tx2)">$</span></div></div>
+    <div class="config-row"><span>Default buy-in</span><div style="display:flex;align-items:center;gap:6px"><input type="number" min="0" id="s-buyin" value="${S.buyin}" style="width:65px;text-align:center"><span style="font-size:12px;color:var(--tx2)">$</span></div></div>
+    <div class="config-row"><span>Challenge duration</span><div style="display:flex;align-items:center;gap:6px"><input type="number" min="1" id="s-weeks" value="${S.totalWeeks}" style="width:65px;text-align:center"><span style="font-size:12px;color:var(--tx2)">weeks</span></div></div>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+      <button class="btn primary" onclick="saveSettings()">Save</button>
+      <span id="s-confirm" style="font-size:11px;color:var(--success);opacity:0;transition:opacity .3s">Saved!</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Shared habit targets</span></div>
+    ${S.sharedHabits.map(h=>`<div class="config-row">
+      <span>${h.icon} ${h.label}</span>
+      <div style="display:flex;align-items:center;gap:6px"><input type="number" min="1" max="7" id="ht-${h.id}" value="${h.target}" style="width:50px;text-align:center"><span style="font-size:12px;color:var(--tx2)">x/wk</span></div>
+    </div>`).join('')}
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+      <button class="btn primary" onclick="saveHabits()">Save</button>
+      <span id="h-confirm" style="font-size:11px;color:var(--success);opacity:0;transition:opacity .3s">Saved!</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Admin PIN</span></div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">To change your PIN, edit the <code style="font-family:'DM Mono',monospace;font-size:11px;background:var(--bg2);padding:1px 5px;border-radius:4px">ADMIN_PIN</code> value at the top of index.html before deploying.</div>
+    <button class="btn" onclick="lockAdmin()">Lock admin session</button>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Pot overview</span></div>
+    <div class="pot-hero">
+      <span style="font-size:24px">💰</span>
+      <div><div class="pot-val">$${Math.max(0,totalPot()-totalPenAmt())}</div><div class="pot-sub">Active pot · $${totalPenAmt()} in penalties</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${sorted().map(m=>{const bal=Math.max(0,balance(m));const pct=Math.round(bal/S.buyin*100);const col=pcol(pct);return`<div class="stat"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">${avatarHTML(m,20,8)}<span class="stat-label" style="margin:0">${m.name}</span></div><div style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:${col}">$${bal}</div><div style="height:3px;background:var(--bg2);border-radius:2px;margin-top:6px"><div style="height:100%;width:${pct}%;background:${col}"></div></div></div>`;}).join('')}
+    </div>
+  </div>`;
+}
+
+// ── MAIN RENDER ──────────────────────────────────────────────────
+function render() {
+  const tabs = [
+    {id:'leaderboard',label:'Leaderboard'},
+    {id:'checkin',label:'Check-ins'},
+    {id:'members',label:'Members'},
+    {id:'settings',label:'Settings'},
+  ];
+  let content = '';
+  if (S.tab==='leaderboard') content = renderLeaderboard();
+  else if (S.tab==='checkin') content = renderCheckins();
+  else if (S.tab==='members') content = renderMembers();
+  else if (S.tab==='settings') content = renderSettings();
+
+  document.getElementById('root').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:var(--tx2);letter-spacing:-.01em">💪 Accountability Tracker</div>
+      <span class="save-indicator" id="save-status"></span>
+    </div>
+    <div class="tabs">${tabs.map(t=>`<button class="tab ${S.tab===t.id?'active':''}" onclick="setTab('${t.id}')">${t.label}</button>`).join('')}</div>
+    ${content}
+  `;
+}
+
+// ── EDIT MODAL ───────────────────────────────────────────────────
+window.openEditModal = id => {
+  const m = S.members.find(x=>x.id===id);
+  if (!m) return;
+  editMemberId = id;
+  editGoals = m.goals.map(g=>({...g}));
+  editPhoto = m.photo || null;
+  document.getElementById('em-name').value = m.name;
+  const preview = document.getElementById('em-photo-preview');
+  if (m.photo) {
+    preview.outerHTML = `<img class="photo-preview" id="em-photo-preview" src="${m.photo}" alt="photo">`;
+  } else {
+    if (preview.tagName === 'IMG') {
+      preview.outerHTML = `<div class="photo-upload-btn" id="em-photo-preview">📷</div>`;
+    } else {
+      preview.textContent = '📷';
+    }
+  }
+  renderEditGoals();
+  document.getElementById('edit-modal').classList.add('open');
+};
+
+function renderEditGoals() {
+  document.getElementById('em-goals-list').innerHTML = editGoals.map((g,i) => `
+    <div class="goal-chip">
+      <span class="goal-chip-label">${g.icon||'🎯'} ${g.name}</span>
+      <div style="display:flex;align-items:center;gap:5px">
+        <input type="number" min="1" max="7" value="${g.target}" id="egt-${i}" style="width:44px;text-align:center" onchange="editGoals[${i}].target=parseInt(this.value)||1">
+        <span style="font-size:11px;color:var(--tx2)">x/wk</span>
+        <button class="btn xs danger-btn" onclick="removeEditGoal(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+window.handleEditPhoto = async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  editPhoto = await resizeImage(file);
+  const wrap = document.getElementById('em-photo-preview');
+  if (wrap) {
+    wrap.outerHTML = `<img class="photo-preview" id="em-photo-preview" src="${editPhoto}" alt="photo">`;
+  }
+};
+
+window.handleAddPhoto = async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const b64 = await resizeImage(file);
+  if (!S.addForm) S.addForm = {name:'', goals:[], photo:null};
+  S.addForm.photo = b64;
+  const preview = document.getElementById('add-photo-preview');
+  if (preview) {
+    preview.outerHTML = `<img class="photo-preview" id="add-photo-preview" src="${b64}" alt="photo">`;
+  }
+};
+
+window.removeEditGoal = i => { editGoals.splice(i,1); renderEditGoals(); };
+window.addGoalToEdit = () => {
+  const name = document.getElementById('eg-name').value.trim();
+  const target = parseInt(document.getElementById('eg-target').value)||1;
+  if (!name) return;
+  editGoals.push({id:uid(), name, target, icon:'🎯'});
+  document.getElementById('eg-name').value='';
+  document.getElementById('eg-target').value='';
+  renderEditGoals();
+};
+window.closeEditModal = () => {
+  document.getElementById('edit-modal').classList.remove('open');
+  editMemberId=null; editGoals=[]; editPhoto=null;
+};
+window.saveEditMember = () => {
+  const m = S.members.find(x=>x.id===editMemberId);
+  if (!m) return;
+  const newName = document.getElementById('em-name').value.trim();
+  if (newName) m.name = newName;
+  m.goals = editGoals;
+  if (editPhoto !== undefined) m.photo = editPhoto;
+  closeEditModal();
+  scheduleSave();
+  render();
+};
+
+// ── ACTIONS ──────────────────────────────────────────────────────
+window.setTab = t => { S.tab=t; render(); };
+window.setWeek = w => { if(w>=1&&w<=S.totalWeeks){S.week=w; render();} };
+window.lockAdmin = () => { isAdmin=false; render(); };
+
+window.toggleDay = (mid, gid, di) => {
+  if (!isAdmin) { requireAdmin(render); return; }
+  const m = S.members.find(x=>x.id===mid);
+  if (!m) return;
+  const k = `w${S.week}_${gid}`;
+  if (!m.checkins[k]) m.checkins[k] = Array(7).fill(0);
+  m.checkins[k][di] = m.checkins[k][di] ? 0 : 1;
+  scheduleSave();
+  render();
+};
+
+window.addGoalToNew = () => {
+  const name = document.getElementById('ag-name').value.trim();
+  const target = parseInt(document.getElementById('ag-target').value)||1;
+  if (!name) return;
+  if (!S.addForm) S.addForm = {name:'',goals:[],photo:null};
+  S.addForm.goals.push({id:uid(), name, target, icon:'🎯'});
+  document.getElementById('ag-name').value='';
+  document.getElementById('ag-target').value='';
+  render();
+};
+window.removeAddGoal = i => {
+  if (S.addForm?.goals) { S.addForm.goals.splice(i,1); render(); }
+};
+window.addMember = () => {
+  const name = document.getElementById('a-name').value.trim();
+  if (!name) return;
+  if (!S.addForm?.goals?.length) { alert('Please add at least one personal goal.'); return; }
+  S.members.push({
+    id: Date.now(),
+    name,
+    color: AV[S.members.length % AV.length],
+    photo: S.addForm.photo || null,
+    goals: S.addForm.goals,
+    checkins: {},
+  });
+  S.addForm = {name:'', goals:[], photo:null};
+  scheduleSave();
+  render();
+};
+window.removeMember = id => {
+  if (!confirm('Remove this member and all their data?')) return;
+  S.members = S.members.filter(m=>m.id!==id);
+  scheduleSave();
+  render();
+};
+window.copySummary = () => {
+  const text = document.getElementById('summary-text').innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const el = document.getElementById('copy-confirm');
+    el.style.opacity='1';
+    setTimeout(()=>el.style.opacity='0', 2000);
+  });
+};
+window.saveSettings = () => {
+  S.penaltyAmount = parseFloat(document.getElementById('s-penalty').value)||10;
+  S.buyin = parseFloat(document.getElementById('s-buyin').value)||40;
+  S.totalWeeks = parseInt(document.getElementById('s-weeks').value)||8;
+  scheduleSave();
+  render();
+  setTimeout(()=>{const el=document.getElementById('s-confirm');if(el){el.style.opacity='1';setTimeout(()=>el.style.opacity='0',2000);}},50);
+};
+window.saveHabits = () => {
+  S.sharedHabits.forEach(h=>{
+    const el=document.getElementById(`ht-${h.id}`);
+    if(el) h.target=parseInt(el.value)||h.target;
+  });
+  scheduleSave();
+  render();
+  setTimeout(()=>{const el=document.getElementById('h-confirm');if(el){el.style.opacity='1';setTimeout(()=>el.style.opacity='0',2000);}},50);
+};
+
+// ── INIT ─────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
